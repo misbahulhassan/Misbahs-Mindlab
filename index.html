@@ -894,46 +894,133 @@
         });
 
         // Feedback form submission
-        document.getElementById('feedbackForm').addEventListener('submit', function(e) {
-            e.preventDefault();
 
-            const rating = ratingInput.value;
-            const name = document.getElementById('feedbackName').value;
-            const comment = document.getElementById('feedbackMessage').value;
+/* ---------------- FIREBASE IMPORTS ---------------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-            if (rating === '0' || !rating) {
-                alert('Please select a rating by clicking on the stars!');
-                return;
-            }
+/* ---------------- FIREBASE CONFIG ---------------- */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+};
 
-            const feedbackItem = document.createElement('div');
-            feedbackItem.className = 'feedback-item';
-            feedbackItem.innerHTML = `
-                <div class="feedback-header">
-                    <span class="feedback-name">${name}</span>
-                    <span class="feedback-rating">${'★'.repeat(rating)}${'☆'.repeat(5-rating)}</span>
-                </div>
-                <p>${comment}</p>
-                <p class="feedback-date">${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-            `;
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-            const feedbackList = document.getElementById('feedbackList');
-            feedbackList.insertBefore(feedbackItem, feedbackList.firstChild);
+/* ---------------- ADMIN LOGIN ---------------- */
+signInWithEmailAndPassword(auth, "admin@email.com", "adminPassword");
 
-            // Limit to 5 feedbacks
-            while(feedbackList.children.length > 5) {
-                feedbackList.removeChild(feedbackList.lastChild);
-            }
+let isAdmin = false;
+onAuthStateChanged(auth, user => {
+  isAdmin = !!user;
+  loadFeedback();
+});
 
-            document.getElementById('feedbackSuccess').classList.add('show');
-            this.reset();
-            selectedRating = 0;
-            updateStars(0);
+/* ---------------- SECURITY (XSS PROTECTION) ---------------- */
+function escapeHTML(text) {
+  return text.replace(/[&<>"']/g, m => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#039;'
+  })[m]);
+}
 
-            setTimeout(() => {
-                document.getElementById('feedbackSuccess').classList.remove('show');
-            }, 4000);
-        });
+/* ---------------- STAR LOGIC ---------------- */
+let selectedRating = 0;
+const ratingInput = document.getElementById('ratingInput');
+
+function updateStars(rating) {
+  selectedRating = rating;
+  ratingInput.value = rating;
+}
+
+/* ---------------- SUBMIT FEEDBACK ---------------- */
+document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const rating = ratingInput.value;
+  const name = escapeHTML(document.getElementById('feedbackName').value);
+  const comment = escapeHTML(document.getElementById('feedbackMessage').value);
+
+  if (rating === '0' || !rating) {
+    alert('Please select a rating!');
+    return;
+  }
+
+  await addDoc(collection(db, "feedback"), {
+    name,
+    rating: Number(rating),
+    comment,
+    createdAt: new Date()
+  });
+
+  document.getElementById('feedbackSuccess').classList.add('show');
+  this.reset();
+  updateStars(0);
+
+  setTimeout(() => {
+    document.getElementById('feedbackSuccess').classList.remove('show');
+  }, 4000);
+
+  loadFeedback();
+});
+
+/* ---------------- LOAD FEEDBACK ---------------- */
+async function loadFeedback() {
+  const feedbackList = document.getElementById('feedbackList');
+  feedbackList.innerHTML = '';
+
+  const q = query(collection(db, "feedback"), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+
+  snap.forEach(docSnap => {
+    const f = docSnap.data();
+
+    const feedbackItem = document.createElement('div');
+    feedbackItem.className = 'feedback-item';
+
+    feedbackItem.innerHTML = `
+      <div class="feedback-header">
+        <span class="feedback-name">${f.name}</span>
+        <span class="feedback-rating">
+          ${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}
+        </span>
+      </div>
+      <p>${f.comment}</p>
+      <p class="feedback-date">
+        ${new Date(f.createdAt.seconds * 1000).toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric'
+        })}
+      </p>
+      ${isAdmin ? `<button class="delete-btn" data-id="${docSnap.id}">Delete</button>` : ''}
+    `;
+
+    feedbackList.appendChild(feedbackItem);
+  });
+
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.onclick = () => deleteFeedback(btn.dataset.id);
+  });
+}
+
+/* ---------------- DELETE FEEDBACK (ADMIN) ---------------- */
+async function deleteFeedback(id) {
+  if (!confirm("Delete this feedback?")) return;
+  await deleteDoc(doc(db, "feedback", id));
+  loadFeedback();
+}
+
 
         // Navbar background on scroll
         window.addEventListener('scroll', function() {
