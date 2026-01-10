@@ -839,10 +839,11 @@ document.getElementById('contactForm').addEventListener('submit', function(e){
 });
 
 /* ----------------------- MOBILE MENU ----------------------- */
-function toggleMenu() {
+window.toggleMenu = function () {
     const menu = document.getElementById('nav-menu');
     menu.classList.toggle('active');
-}
+};
+
 
 /* ----------------------- SMOOTH SCROLL ----------------------- */
 document.querySelectorAll('a[href^="#"]').forEach(anchor=>{
