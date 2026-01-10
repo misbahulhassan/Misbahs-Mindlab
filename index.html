@@ -796,206 +796,183 @@
         </div>
     </footer>
 
-  <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+<script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+
 <script type="module">
-/* ----------------------- EMAILJS SETUP ----------------------- */
-// Initialize EmailJS
+/* =========================================================
+   EMAILJS SETUP
+========================================================= */
 emailjs.init("wLEaONGk99RbJNSpZ");
 
-
-// Contact form submission
-document.getElementById('contactForm').addEventListener('submit', function(e){
+document.getElementById("contactForm")?.addEventListener("submit", function (e) {
     e.preventDefault();
-    const serviceID = 'service_q3ss93a';
-    const templateID = 'template_0zdpvlc';
-    const submitBtn = this.querySelector('.btn-submit');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Sending...';
-    submitBtn.disabled = true;
 
-    emailjs.sendForm(serviceID, templateID, this)
+    const btn = this.querySelector(".btn-submit");
+    btn.disabled = true;
+    btn.textContent = "Sending...";
+
+    emailjs
+        .sendForm("service_q3ss93a", "template_0zdpvlc", this)
         .then(() => {
-            document.getElementById('contactSuccess').classList.add('show');
+            document.getElementById("contactSuccess").classList.add("show");
             this.reset();
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-            setTimeout(()=>document.getElementById('contactSuccess').classList.remove('show'),5000);
+            setTimeout(() => {
+                document.getElementById("contactSuccess").classList.remove("show");
+            }, 4000);
         })
-        .catch(err => {
-            alert('Failed to send message. Please try WhatsApp or call instead.');
-            console.error('EmailJS Error:', err);
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
+        .catch(() => alert("Failed to send message"))
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = "Send Message";
         });
 });
 
-/* ----------------------- MOBILE MENU ----------------------- */
-window.toggleMenu = function () {
-    const menu = document.getElementById('nav-menu');
-    menu.classList.toggle('active');
-};
-
-
-/* ----------------------- SMOOTH SCROLL ----------------------- */
-document.querySelectorAll('a[href^="#"]').forEach(anchor=>{
-    anchor.addEventListener('click', function(e){
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if(target){
-            target.scrollIntoView({behavior:'smooth', block:'start'});
-            if(window.innerWidth<=768) document.getElementById('nav-menu').classList.remove('active');
-        }
-    });
-});
-
-/* ----------------------- FIREBASE SETUP ----------------------- */
+/* =========================================================
+   FIREBASE SETUP
+========================================================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    query,
+    orderBy,
+    limit
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAjb0cvHMHb_KeJtDTqtJl5t-0SZ_fff3A",
     authDomain: "misbah-s-mindlabs.firebaseapp.com",
     projectId: "misbah-s-mindlabs"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-import { collection, getDocs, query, orderBy, limit } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const feedbackList = document.getElementById("feedbackList");
-
-async function loadFeedback() {
-  const q = query(
-    collection(db, "feedback"),
-    orderBy("createdAt", "desc"),
-    limit(10)
-  );
-
-  const snapshot = await getDocs(q);
-  feedbackList.innerHTML = "";
-
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    feedbackList.innerHTML += `
-      <div class="feedback-card">
-        <h4>${data.name}</h4>
-        <p>${data.comment}</p>
-        <strong>⭐ ${data.rating}</strong>
-      </div>
-    `;
-  });
+/* =========================================================
+   SECURITY (XSS PROTECTION)
+========================================================= */
+function escapeHTML(text) {
+    return text.replace(/[&<>"']/g, m => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    }[m]));
 }
 
-loadFeedback();
-const auth = getAuth(app);
-
-/* ----------------------- XSS ESCAPE ----------------------- */
-function escapeHTML(text){
-    return text.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-}
-
-/* ----------------------- STAR RATING SYSTEM ----------------------- */
+/* =========================================================
+   STAR RATING SYSTEM
+========================================================= */
 let selectedRating = 0;
-const stars = document.querySelectorAll('.star');
-const ratingInput = document.getElementById('ratingInput');
+const stars = document.querySelectorAll(".star");
+const ratingInput = document.getElementById("ratingInput");
 
-stars.forEach(star=>{
-    star.addEventListener('click',()=>{ 
-        selectedRating = star.dataset.rating; 
-        ratingInput.value = selectedRating; 
-        updateStars(selectedRating); 
+stars.forEach(star => {
+    star.addEventListener("click", () => {
+        selectedRating = Number(star.dataset.rating);
+        ratingInput.value = selectedRating;
+        updateStars(selectedRating);
     });
-    star.addEventListener('mouseenter',()=>updateStars(star.dataset.rating));
 });
-document.getElementById('ratingStars').addEventListener('mouseleave',()=>updateStars(selectedRating));
 
-function updateStars(rating){
-    stars.forEach((star,idx)=>star.classList.toggle('active', idx<rating));
+function updateStars(rating) {
+    stars.forEach((star, i) => {
+        star.classList.toggle("active", i < rating);
+    });
 }
 
-/* ----------------------- FEEDBACK FORM SUBMIT ----------------------- */
-document.getElementById('feedbackForm').addEventListener('submit', async e=>{
+/* =========================================================
+   FEEDBACK SUBMIT
+========================================================= */
+document.getElementById("feedbackForm")?.addEventListener("submit", async e => {
     e.preventDefault();
-    if(!selectedRating) return alert('Please select a rating!');
-    
-    const name = escapeHTML(document.getElementById('feedbackName').value);
-    const comment = escapeHTML(document.getElementById('feedbackMessage').value);
+    if (!selectedRating) return alert("Please select rating");
 
-    await addDoc(collection(db,'feedback'),{
-        name,
-        comment,
-        rating:Number(selectedRating),
-        createdAt:new Date()
+    await addDoc(collection(db, "feedback"), {
+        name: escapeHTML(document.getElementById("feedbackName").value),
+        comment: escapeHTML(document.getElementById("feedbackMessage").value),
+        rating: selectedRating,
+        createdAt: new Date()
     });
 
-    document.getElementById('feedbackSuccess').classList.add('show');
     e.target.reset();
-    selectedRating=0;
+    selectedRating = 0;
     updateStars(0);
-    setTimeout(()=>document.getElementById('feedbackSuccess').classList.remove('show'),4000);
+
+    document.getElementById("feedbackSuccess").classList.add("show");
+    setTimeout(() => {
+        document.getElementById("feedbackSuccess").classList.remove("show");
+    }, 4000);
 
     loadFeedback();
 });
 
-createdAt: new Date()
+/* =========================================================
+   LOAD FEEDBACK (PUBLIC VIEW)
+========================================================= */
+async function loadFeedback() {
+    const list = document.getElementById("feedbackList");
+    if (!list) return;
 
-/* ----------------------- LOAD FEEDBACK ----------------------- */
-async function loadFeedback(){
-    const feedbackList = document.getElementById('feedbackList');
-    feedbackList.innerHTML='';
-    const q = query(collection(db,'feedback'),orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
+    list.innerHTML = "";
 
-    snap.forEach(docSnap=>{
-        const f = docSnap.data();
-        const feedbackItem = document.createElement('div');
-        feedbackItem.className='feedback-item';
-        feedbackItem.innerHTML=`
-            <div class="feedback-header">
-                <span class="feedback-name">${f.name}</span>
-                <span class="feedback-rating">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</span>
+    const q = query(
+        collection(db, "feedback"),
+        orderBy("createdAt", "desc"),
+        limit(10)
+    );
+
+    const snapshot = await getDocs(q);
+
+    snapshot.forEach(doc => {
+        const f = doc.data();
+        list.innerHTML += `
+            <div class="feedback-card">
+                <h4>${f.name}</h4>
+                <p>${f.comment}</p>
+                <strong>${"★".repeat(f.rating)}${"☆".repeat(5 - f.rating)}</strong>
             </div>
-            <p>${f.comment}</p>
-            <p class="feedback-date">${new Date(f.createdAt.seconds ? f.createdAt.seconds*1000 : f.createdAt).toLocaleDateString('en-US',{month:'long',year:'numeric'})}</p>
         `;
-        feedbackList.appendChild(feedbackItem);
-    });
-
-    document.querySelectorAll('.delete-btn').forEach(btn=>{
-        btn.onclick=async()=>{
-            if(confirm('Delete this feedback?')){
-                await deleteDoc(doc(db,'feedback',btn.dataset.id));
-                loadFeedback();
-            }
-        };
     });
 }
 
-/* ----------------------- NAVBAR SCROLL EFFECT ----------------------- */
-window.addEventListener('scroll',()=>{
-    const nav = document.querySelector('nav');
-    if(window.scrollY>50){
-        nav.style.background='rgba(255,255,255,0.98)';
-        nav.style.boxShadow='0 2px 10px rgba(0,0,0,0.1)';
-    }else nav.style.background='var(--white)';
-});
+loadFeedback();
 
-/* ----------------------- SECTION ANIMATIONS ----------------------- */
-const observer = new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-        if(entry.isIntersecting){
-            entry.target.style.opacity='1';
-            entry.target.style.transform='translateY(0)';
+/* =========================================================
+   MOBILE MENU
+========================================================= */
+window.toggleMenu = function () {
+    document.getElementById("nav-menu")?.classList.toggle("active");
+};
+
+/* =========================================================
+   SMOOTH SCROLL
+========================================================= */
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute("href"));
+        if (target) {
+            target.scrollIntoView({ behavior: "smooth" });
+            document.getElementById("nav-menu")?.classList.remove("active");
         }
     });
-},{threshold:0.1, rootMargin:'0px 0px -50px 0px'});
+});
 
-document.querySelectorAll('section').forEach(section=>{
-    section.style.opacity='0';
-    section.style.transform='translateY(20px)';
-    section.style.transition='opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(section);
+/* =========================================================
+   NAVBAR SCROLL EFFECT
+========================================================= */
+window.addEventListener("scroll", () => {
+    const nav = document.querySelector("nav");
+    if (!nav) return;
+
+    nav.style.background =
+        window.scrollY > 50 ? "rgba(255,255,255,0.98)" : "var(--white)";
+    nav.style.boxShadow =
+        window.scrollY > 50 ? "0 2px 10px rgba(0,0,0,0.1)" : "none";
 });
 </script>
 
