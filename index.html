@@ -811,6 +811,12 @@
 // Initialize EmailJS
 emailjs.init("wLEaONGk99RbJNSpZ");
 
+// Mobile menu toggle
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            menu.classList.toggle('active');
+        }
+
 // Contact form submission
 document.getElementById('contactForm').addEventListener('submit', function(e){
     e.preventDefault();
