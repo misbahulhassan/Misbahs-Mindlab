@@ -871,12 +871,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-/* ----------------------- ADMIN LOGIN ----------------------- */
-let isAdmin = false;
-signInWithEmailAndPassword(auth, "hassanmisbahul18@gmail.com", "Realme@3690")
-    .then(()=>{ isAdmin=true; loadFeedback(); })
-    .catch(err=>console.error("Firebase login error:", err));
-
 /* ----------------------- XSS ESCAPE ----------------------- */
 function escapeHTML(text){
     return text.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -943,7 +937,6 @@ async function loadFeedback(){
             </div>
             <p>${f.comment}</p>
             <p class="feedback-date">${new Date(f.createdAt.seconds ? f.createdAt.seconds*1000 : f.createdAt).toLocaleDateString('en-US',{month:'long',year:'numeric'})}</p>
-            ${isAdmin?`<button class="delete-btn" data-id="${docSnap.id}">Delete</button>`:''}
         `;
         feedbackList.appendChild(feedbackItem);
     });
