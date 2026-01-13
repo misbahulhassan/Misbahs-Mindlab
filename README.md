@@ -1,2 +1,1 @@
-# Misbahs-Mindlab
-Personal Tutoring website
+Built using AI-assisted development and customized manually.
